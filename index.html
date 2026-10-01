@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comparatif Prix Semences</title>
+<style>
+:root{
+  --bg:#f8f6f1;--surf:#fff;--brd:#e0dbd0;--txt:#1a1a18;--muted:#6b6860;
+  --grn:#2d6a2d;--grn-l:#e8f0e8;
+  --hbg:#1e3a1e;--htx:#f8f6f1;
+  --ok-bg:#e8f4e8;--ok:#1a5a1a;
+  --est-bg:#fff8e0;--est:#7a5000;
+  --na-bg:#f4f4f4;--na:#888;
+  --nosup-bg:#fef0f0;--nosup:#a03030;
+  --err:#b03030;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#161a14;--surf:#1f2a1c;--brd:#2e3d2a;--txt:#edecea;--muted:#9b9990;
+  --grn:#5aad5a;--grn-l:#1e3020;
+  --hbg:#0f1e0f;--htx:#edecea;
+  --ok-bg:#0a2a0a;--ok:#7acc7a;
+  --est-bg:#2a2010;--est:#d0a040;
+  --na-bg:#1e1e1e;--na:#888;
+  --nosup-bg:#2a1010;--nosup:#e08080;
+}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:"Segoe UI",system-ui,sans-serif;font-size:14px;line-height:1.5;min-height:100vh}
+header{background:var(--hbg);color:var(--htx);padding:16px 24px 14px}
+header h1{font-size:1.2rem;font-weight:600;margin-bottom:2px}
+header p{font-size:.76rem;opacity:.6}
+.import-section{padding:18px 24px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:600px){.import-section{grid-template-columns:1fr}}
+.drop-card{border:2px dashed var(--brd);border-radius:10px;padding:18px;text-align:center;transition:.15s;background:var(--surf)}
+.drop-card:hover,.drop-card.drag{border-color:var(--grn);background:var(--grn-l)}
+.drop-card.loaded{border-style:solid;border-color:var(--grn)}
+.drop-card h3{font-size:.88rem;font-weight:600;margin-bottom:4px}
+.drop-card p{font-size:.71rem;color:var(--muted);margin-bottom:10px;line-height:1.4}
+.drop-card input[type=file]{display:none}
+.btn-upload{display:inline-block;padding:6px 14px;border-radius:6px;font-size:.77rem;cursor:pointer;background:var(--grn);color:#fff;border:none;font-family:inherit}
+.file-status{margin-top:8px;font-size:.71rem;font-weight:600;min-height:16px}
+.file-status.ok{color:var(--grn)}
+.file-status.err{color:var(--err)}
+.file-status.empty{color:var(--muted)}
+.summary{display:none;margin:0 24px 14px;background:var(--surf);border:1px solid var(--brd);border-radius:8px;overflow:hidden}
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+.summary-cell{padding:12px 16px;border-right:1px solid var(--brd)}
+.summary-cell:last-child{border-right:none}
+.summary-cell .val{font-size:1.35rem;font-weight:700;color:var(--grn)}
+.summary-cell .val.warn{color:var(--est)}
+.summary-cell .val.alert{color:var(--nosup)}
+.summary-cell .lbl{font-size:.7rem;color:var(--muted);margin-top:1px}
+.summary-notes{padding:7px 16px;font-size:.72rem;border-top:1px solid var(--brd);display:flex;flex-wrap:wrap;gap:10px}
+.snote{padding:2px 8px;border-radius:4px;font-weight:600}
+.snote.warn{background:var(--est-bg);color:var(--est)}
+.snote.alert{background:var(--nosup-bg);color:var(--nosup)}
+.snote.na{background:var(--na-bg);color:var(--na)}
+.controls{padding:9px 24px;display:none;gap:8px;flex-wrap:wrap;align-items:center;background:var(--surf);border-top:1px solid var(--brd);border-bottom:1px solid var(--brd);position:sticky;top:0;z-index:10;box-shadow:0 2px 5px rgba(0,0,0,.07)}
+.controls input,.controls select{padding:5px 9px;border:1px solid var(--brd);border-radius:6px;background:var(--bg);color:var(--txt);font-size:.81rem}
+.controls input{flex:1;min-width:130px}
+.controls label{font-size:.75rem;color:var(--muted);white-space:nowrap}
+.ctl-badge{margin-left:auto;font-size:.73rem;color:var(--muted);white-space:nowrap}
+.btn-dl{padding:6px 13px;border-radius:6px;background:var(--grn);color:#fff;border:none;font-size:.76rem;cursor:pointer;font-family:inherit;white-space:nowrap}
+.twrap{overflow-x:auto;padding-bottom:80px}
+table{width:100%;border-collapse:collapse;font-size:.78rem}
+thead th{background:var(--surf);border-bottom:2px solid var(--brd);padding:8px 10px;text-align:left;font-weight:600;white-space:nowrap;position:sticky;top:48px}
+td{padding:6px 10px;vertical-align:middle;border-bottom:1px solid var(--brd)}
+tbody tr:hover{background:var(--grn-l)}
+tbody tr.no-sup{background:var(--nosup-bg)}
+td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.total-cell{text-align:right;font-weight:700;color:var(--grn);white-space:nowrap}
+td.muted{font-size:.71rem;color:var(--muted)}
+td.nosup-cell{font-size:.71rem;color:var(--nosup);font-weight:600}
+.badge-ok{display:inline-block;padding:2px 7px;border-radius:4px;font-size:.66rem;font-weight:700;background:var(--ok-bg);color:var(--ok)}
+.badge-est{display:inline-block;padding:2px 7px;border-radius:4px;font-size:.66rem;font-weight:700;background:var(--est-bg);color:var(--est)}
+.badge-na{display:inline-block;padding:2px 7px;border-radius:4px;font-size:.66rem;color:var(--na);background:var(--na-bg);border:1px solid var(--brd)}
+.badge-nosup{display:inline-block;padding:2px 7px;border-radius:4px;font-size:.66rem;font-weight:700;background:var(--nosup-bg);color:var(--nosup)}
+.empty{text-align:center;padding:48px;color:var(--muted);font-size:.85rem}
+.placeholder{text-align:center;padding:60px 24px;color:var(--muted)}
+.placeholder h2{font-size:1rem;margin-bottom:8px;color:var(--txt)}
+.placeholder p{font-size:.8rem;line-height:1.6}
+.total-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surf);border-top:2px solid var(--brd);padding:9px 24px;display:none;gap:20px;flex-wrap:wrap;align-items:center;z-index:20;box-shadow:0 -2px 8px rgba(0,0,0,.08)}
+.total-bar.show{display:flex}
+.t-main{font-size:1.05rem;font-weight:700;color:var(--grn)}
+.t-sub{font-size:.71rem;color:var(--muted);margin-top:1px}
+.t-warn{font-size:.71rem;color:var(--est);margin-left:auto}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>&#128176; Comparatif Prix Semences</h1>
+  <p>Chargez votre plan de semences et vos tarifs fournisseurs &#8212; croisement et calculs automatiques.</p>
+</header>
+
+<div class="import-section">
+  <div class="drop-card" id="drop-plan">
+    <h3>&#128203; Plan de semences</h3>
+    <p>Fichier de planification avec esp&#232;ces, vari&#233;t&#233;s et quantit&#233;s &#224; acheter.<br>
+    <em>Colonnes cl&#233;s&#160;: species, variety, seed_supplier, seeds_to_buy_grams, seeds_to_buy, weight_seed_1000</em></p>
+    <label class="btn-upload">Choisir le fichier CSV
+      <input type="file" id="input-plan" accept=".csv,.txt">
+    </label>
+    <div class="file-status empty" id="status-plan">Aucun fichier charg&#233;</div>
+  </div>
+  <div class="drop-card" id="drop-tarif">
+    <h3>&#127991; Tarifs semenciers</h3>
+    <p>Fichier de prix par fournisseur et vari&#233;t&#233;.<br>
+    <em>Colonnes cl&#233;s&#160;: fournisseur, variete, espece, conditionnement_unite, conditionnement_qte, prix_ht, poids_1000_graines_g, prix_par_gramme, prix_par_1000_graines</em></p>
+    <label class="btn-upload">Choisir le fichier CSV
+      <input type="file" id="input-tarif" accept=".csv,.txt">
+    </label>
+    <div class="file-status empty" id="status-tarif">Aucun fichier charg&#233;</div>
+  </div>
+</div>
+
+<div class="summary" id="summary">
+  <div class="summary-grid">
+    <div class="summary-cell"><div class="val" id="s-total">&#8212;</div><div class="lbl">Total estim&#233; HT</div></div>
+    <div class="summary-cell"><div class="val" id="s-ok">&#8212;</div><div class="lbl">Prix exacts</div></div>
+    <div class="summary-cell"><div class="val warn" id="s-est">&#8212;</div><div class="lbl">Prix approch&#233;s</div></div>
+    <div class="summary-cell"><div class="val" id="s-na" style="color:var(--na)">&#8212;</div><div class="lbl">Sans prix</div></div>
+    <div class="summary-cell"><div class="val alert" id="s-nosup">&#8212;</div><div class="lbl">Sans fournisseur</div></div>
+    <div class="summary-cell"><div class="val" id="s-lignes">&#8212;</div><div class="lbl">Lignes total</div></div>
+  </div>
+  <div class="summary-notes" id="summary-notes" style="display:none"></div>
+</div>
+
+<div class="controls" id="controls">
+  <input type="text" id="search" placeholder="Rechercher esp&#232;ce, vari&#233;t&#233;, fournisseur&#8230;">
+  <label>Fournisseur&#160;:</label>
+  <select id="f-sup"><option value="">Tous</option></select>
+  <label>Statut&#160;:</label>
+  <select id="f-statut">
+    <option value="">Tous</option>
+    <option value="ok">Prix exact</option>
+    <option value="approche">Prix approch&#233;</option>
+    <option value="na">Sans prix</option>
+    <option value="nosup">Sans fournisseur</option>
+  </select>
+  <label>Tri&#160;:</label>
+  <select id="f-sort">
+    <option value="espece">Esp&#232;ce A&#8594;Z</option>
+    <option value="total_desc">Total d&#233;croissant</option>
+    <option value="total_asc">Total croissant</option>
+    <option value="fournisseur">Fournisseur A&#8594;Z</option>
+    <option value="statut">Statut</option>
+  </select>
+  <button class="btn-dl" id="btn-dl">&#11015; Exporter CSV</button>
+  <span class="ctl-badge" id="badge">&#8212; lignes</span>
+</div>
+
+<div class="twrap">
+  <div class="placeholder" id="placeholder">
+    <h2>Chargez vos deux fichiers CSV</h2>
+    <p>Le plan de semences contient vos besoins en quantit&#233;s.<br>
+    Le fichier tarifs contient les prix par fournisseur et vari&#233;t&#233;.<br>
+    L&#8217;outil croise automatiquement les deux et calcule vos co&#251;ts.</p>
+  </div>
+  <table id="main-table" style="display:none">
+    <thead>
+      <tr>
+        <th>Esp&#232;ce</th>
+        <th>Vari&#233;t&#233;</th>
+        <th>Fournisseur</th>
+        <th>Qt&#233; &#224; acheter</th>
+        <th>PMG (g)</th>
+        <th>Prix / g (&#8364;HT)</th>
+        <th>Prix / 1000 gr. (&#8364;HT)</th>
+        <th>Total (&#8364;HT)</th>
+        <th>Statut</th>
+        <th>Notes tarif</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+  <div id="empty" class="empty" style="display:none">Aucune ligne ne correspond aux filtres.</div>
+</div>
+
+<div class="total-bar" id="total-bar">
+  <div>
+    <div class="t-main" id="t-total">0,00 &#8364;</div>
+    <div class="t-sub" id="t-sub">sur 0 lignes avec prix</div>
+  </div>
+  <div class="t-warn" id="t-warn"></div>
+</div>
+
+<script>
+(function(){
+
+function parseCSV(text){
+  var lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  if(!lines.length)return[];
+  var headers=splitLine(lines[0]);
+  var rows=[];
+  for(var i=1;i<lines.length;i++){
+    if(!lines[i].trim())continue;
+    var cols=splitLine(lines[i]);
+    var row={};
+    headers.forEach(function(h,idx){row[h.trim()]=(cols[idx]||'').trim();});
+    rows.push(row);
+  }
+  return rows;
+}
+
+function splitLine(line){
+  var cols=[],cur='',inQ=false;
+  for(var i=0;i<line.length;i++){
+    var c=line[i];
+    if(c==='"'){inQ=!inQ;}
+    else if(c===','&&!inQ){cols.push(cur);cur='';}
+    else cur+=c;
+  }
+  cols.push(cur);
+  return cols.map(function(s){return s.replace(/^"|"$/g,'');});
+}
+
+function flt(s){
+  if(s==null||s==='')return null;
+  var v=parseFloat((s+'').replace(',','.'));
+  return isNaN(v)?null:v;
+}
+function fmt2(v){return v!=null?v.toFixed(2).replace('.',','):'\u2014';}
+function fmt4(v){return v!=null?v.toFixed(4).replace('.',','):'\u2014';}
+function fmtN(v){return v>0?v.toLocaleString('fr'):'\u2014';}
+
+function normalize(s){
+  return(s||'').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\s*f[12]\b/gi,'').replace(/\s*\(.*?\)/g,'')
+    .replace(/[^a-z0-9\s]/g,'').trim();
+}
+
+var planRows=null,tarifRows=null,resultData=[];
+var srch='',fSup='',fStatut='',fSort='espece';
+
+function findTarif(supplier,variety){
+  if(!tarifRows||!tarifRows.length)return null;
+  var nSup=normalize(supplier),nVar=normalize(variety);
+  var best=null,bestScore=-1;
+  tarifRows.forEach(function(t){
+    var tSup=normalize(t.fournisseur||''),tVar=normalize(t.variete||'');
+    var supOk=!nSup||tSup===nSup||tSup.indexOf(nSup)>-1||nSup.indexOf(tSup)>-1;
+    if(!supOk)return;
+    var score=0;
+    if(tVar===nVar)score=100;
+    else if(nVar&&tVar&&(nVar.indexOf(tVar)>-1||tVar.indexOf(nVar)>-1))score=75;
+    else{
+      var words=tVar.split(/\s+/).filter(function(w){return w.length>2;});
+      var hits=words.filter(function(w){return nVar.indexOf(w)>-1;});
+      if(words.length&&hits.length)score=Math.round(hits.length/words.length*50);
+    }
+    if(score>bestScore){bestScore=score;best={tarif:t,score:score};}
+  });
+  return(best&&bestScore>=25)?best:null;
+}
+
+function computePrix(t,gramsToOrder,seedsToOrder,pmgFromPlan){
+  var pmg=flt(t.poids_1000_graines_g)||pmgFromPlan||null;
+  var prixG=flt(t.prix_par_gramme);
+  var prix1000=flt(t.prix_par_1000_graines);
+  var cQte=flt(t.conditionnement_qte),cPrix=flt(t.prix_ht);
+  var cUnit=(t.conditionnement_unite||'').toLowerCase().trim();
+  if(!prixG&&prix1000&&pmg)prixG=prix1000/pmg;
+  if(!prixG&&cQte&&cPrix){
+    if(cUnit==='grammes'||cUnit==='g'||cUnit==='gr')prixG=cPrix/cQte;
+    else if((cUnit==='graines'||cUnit==='graine')&&pmg)prixG=cPrix/(cQte*pmg/1000);
+  }
+  if(!prix1000&&prixG&&pmg)prix1000=prixG*pmg;
+  var total=null;
+  if(prixG&&gramsToOrder>0)total=prixG*gramsToOrder;
+  else if(prix1000&&seedsToOrder>0&&pmg)total=(prix1000/1000)*seedsToOrder;
+  return{prixG:prixG,prix1000:prix1000,total:total,pmg:pmg};
+}
+
+function buildResult(){
+  if(!planRows)return;
+  resultData=[];
+  planRows.forEach(function(row){
+    var gramsToOrder=flt(row.seeds_to_buy_grams)||0;
+    var seedsToOrder=flt(row.seeds_to_buy)||0;
+    if(gramsToOrder<=0&&seedsToOrder<=0)return;
+    var species=(row.species||'').trim();
+    var variety=(row.variety||'').trim().replace(/^[A-Z]{1,5}\s*-\s*/,'');
+    var supplier=(row.seed_supplier||'').trim();
+    var pmgPlan=flt(row.weight_seed_1000);
+    var hasSupplier=supplier!=='';
+    var match=findTarif(supplier,variety);
+    var statut,prixG=null,prix1000=null,total=null,pmgUsed=pmgPlan,notes='',tarifSup=supplier;
+    if(!hasSupplier){
+      statut='nosup';
+    }else if(match){
+      var c=computePrix(match.tarif,gramsToOrder,seedsToOrder,pmgPlan);
+      prixG=c.prixG;prix1000=c.prix1000;total=c.total;pmgUsed=c.pmg;
+      notes=match.tarif.notes||'';tarifSup=match.tarif.fournisseur||supplier;
+      statut=match.score>=75?'ok':'approche';
+    }else{
+      statut='na';
+    }
+    resultData.push({
+      species:species,variety:variety,supplier:tarifSup||supplier,
+      hasSupplier:hasSupplier,gramsToOrder:gramsToOrder,seedsToOrder:seedsToOrder,
+      pmg:pmgUsed,prixG:prixG,prix1000:prix1000,total:total,statut:statut,notes:notes
+    });
+  });
+  updateSummary();
+  renderTable();
+}
+
+function updateSummary(){
+  document.getElementById('summary').style.display='';
+  var total=0,ok=0,est=0,na=0,nosup=0;
+  var sups=new Set();
+  resultData.forEach(function(r){
+    if(r.total!=null)total+=r.total;
+    if(r.statut==='ok')ok++;
+    else if(r.statut==='approche')est++;
+    else if(r.statut==='na')na++;
+    else if(r.statut==='nosup')nosup++;
+    if(r.supplier)sups.add(r.supplier);
+  });
+  document.getElementById('s-total').textContent=fmt2(total)+' \u20ac';
+  document.getElementById('s-ok').textContent=ok;
+  document.getElementById('s-est').textContent=est;
+  document.getElementById('s-na').textContent=na;
+  document.getElementById('s-nosup').textContent=nosup;
+  document.getElementById('s-lignes').textContent=resultData.length;
+  var notesArr=[];
+  if(nosup>0)notesArr.push({cls:'alert',txt:'\u26a0 '+nosup+' ligne'+(nosup>1?'s':'')+' sans fournisseur \u2014 \u00e0 compl\u00e9ter'});
+  if(est>0)notesArr.push({cls:'warn',txt:'~ '+est+' prix approch\u00e9'+(est>1?'s':'')+' (correspondance partielle)'});
+  if(na>0)notesArr.push({cls:'na',txt:'? '+na+' sans correspondance dans le fichier tarifs'});
+  var el=document.getElementById('summary-notes');
+  el.innerHTML=notesArr.map(function(n){return'<span class="snote '+n.cls+'">'+n.txt+'</span>';}).join('');
+  el.style.display=notesArr.length?'':'none';
+  var sel=document.getElementById('f-sup');
+  var cur=sel.value;
+  sel.innerHTML='<option value="">Tous fournisseurs</option>';
+  Array.from(sups).sort().forEach(function(s){
+    var o=document.createElement('option');
+    o.value=s;o.textContent=s;if(s===cur)o.selected=true;
+    sel.appendChild(o);
+  });
+}
+
+function filtered(){
+  return resultData.filter(function(r){
+    if(fSup&&r.supplier!==fSup)return false;
+    if(fStatut&&r.statut!==fStatut)return false;
+    if(srch){
+      var s=srch.toLowerCase();
+      if(r.species.toLowerCase().indexOf(s)<0&&
+         r.variety.toLowerCase().indexOf(s)<0&&
+         r.supplier.toLowerCase().indexOf(s)<0)return false;
+    }
+    return true;
+  });
+}
+
+function sorted(rows){
+  return rows.slice().sort(function(a,b){
+    if(fSort==='total_desc')return(b.total||0)-(a.total||0);
+    if(fSort==='total_asc')return(a.total||0)-(b.total||0);
+    if(fSort==='fournisseur')return a.supplier.localeCompare(b.supplier,'fr');
+    if(fSort==='statut'){
+      var o={ok:0,approche:1,na:2,nosup:3};
+      return(o[a.statut]||9)-(o[b.statut]||9);
+    }
+    var c=a.species.localeCompare(b.species,'fr');
+    return c!==0?c:a.variety.localeCompare(b.variety,'fr');
+  });
+}
+
+function statusBadge(s){
+  if(s==='ok')return'<span class="badge-ok">\u2713 Exact</span>';
+  if(s==='approche')return'<span class="badge-est">~ Approch\u00e9</span>';
+  if(s==='nosup')return'<span class="badge-nosup">\u26a0 Sans fournisseur</span>';
+  return'<span class="badge-na">? Non trouv\u00e9</span>';
+}
+
+function qtyStr(r){
+  var parts=[];
+  if(r.gramsToOrder>0)parts.push(r.gramsToOrder.toFixed(2).replace('.',',')+'\u202fg');
+  if(r.seedsToOrder>0)parts.push(fmtN(r.seedsToOrder)+'\u202fgr.');
+  return parts.join(' / ')||'\u2014';
+}
+
+function renderTable(){
+  var rows=sorted(filtered());
+  var tb=document.getElementById('tbody');
+  var empty=document.getElementById('empty');
+  document.getElementById('placeholder').style.display='none';
+  document.getElementById('controls').style.display='flex';
+  document.getElementById('main-table').style.display='';
+  document.getElementById('total-bar').classList.add('show');
+  document.getElementById('badge').textContent=rows.length+' ligne'+(rows.length!==1?'s':'');
+  if(!rows.length){tb.innerHTML='';empty.style.display='';return;}
+  empty.style.display='none';
+  tb.innerHTML=rows.map(function(r){
+    var nc=r.statut==='nosup'?' class="no-sup"':'';
+    var sc=r.hasSupplier
+      ?'<td class="muted">'+r.supplier+'</td>'
+      :'<td class="nosup-cell">\u26a0 Non renseign\u00e9</td>';
+    return'<tr'+nc+'>'+
+      '<td><strong>'+r.species+'</strong></td>'+
+      '<td>'+r.variety+'</td>'+
+      sc+
+      '<td class="num">'+qtyStr(r)+'</td>'+
+      '<td class="num muted">'+(r.pmg?r.pmg.toFixed(1).replace('.',','):'\u2014')+'</td>'+
+      '<td class="num">'+(r.prixG!=null?fmt4(r.prixG)+'\u202f\u20ac':'<span class="muted">\u2014</span>')+'</td>'+
+      '<td class="num">'+(r.prix1000!=null?fmt2(r.prix1000)+'\u202f\u20ac':'<span class="muted">\u2014</span>')+'</td>'+
+      '<td class="total-cell">'+(r.total!=null?fmt2(r.total)+'\u202f\u20ac':'<span class="muted" style="font-weight:400">\u2014</span>')+'</td>'+
+      '<td>'+statusBadge(r.statut)+'</td>'+
+      '<td class="muted" style="font-size:.69rem;max-width:160px;line-height:1.3">'+r.notes+'</td>'+
+      '</tr>';
+  }).join('');
+  var tot=0,withP=0,naC=0,nosupC=0;
+  rows.forEach(function(r){
+    if(r.total!=null){tot+=r.total;withP++;}
+    if(r.statut==='na')naC++;
+    if(r.statut==='nosup')nosupC++;
+  });
+  document.getElementById('t-total').textContent=fmt2(tot)+'\u202f\u20ac';
+  document.getElementById('t-sub').textContent='sur\u202f'+withP+'\u202fligne'+(withP!==1?'s':'')+' avec prix';
+  var warns=[];
+  if(nosupC>0)warns.push('\u26a0\u202f'+nosupC+' sans fournisseur');
+  if(naC>0)warns.push('?\u202f'+naC+' sans prix');
+  document.getElementById('t-warn').textContent=warns.join('\u2003');
+}
+
+document.getElementById('btn-dl').addEventListener('click',function(){
+  var rows=sorted(filtered());
+  var h=['Espece','Variete','Fournisseur','Qte_grammes','Qte_graines','PMG_g',
+         'Prix_par_gramme_HT','Prix_par_1000_graines_HT','Total_HT','Statut','Notes'];
+  var lines=[h.join(',')];
+  rows.forEach(function(r){
+    lines.push([
+      r.species,r.variety,r.supplier,
+      r.gramsToOrder||'',r.seedsToOrder||'',
+      r.pmg?r.pmg.toFixed(2):'',
+      r.prixG?r.prixG.toFixed(5):'',
+      r.prix1000?r.prix1000.toFixed(4):'',
+      r.total?r.total.toFixed(2):'',
+      r.statut,r.notes||''
+    ].map(function(v){return'"'+String(v||'').replace(/"/g,'""')+'"';}).join(','));
+  });
+  var blob=new Blob(['\ufeff'+lines.join('\n')],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='comparatif_semences_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+});
+
+function setupDrop(cardId,inputId,statusId,onLoad){
+  var card=document.getElementById(cardId);
+  var inp=document.getElementById(inputId);
+  var statusEl=document.getElementById(statusId);
+  function load(file){
+    if(!file)return;
+    var reader=new FileReader();
+    reader.onload=function(e){
+      try{
+        var rows=parseCSV(e.target.result);
+        if(!rows.length)throw new Error('Fichier vide ou non reconnu');
+        statusEl.textContent='\u2713 '+file.name+' \u2014 '+rows.length+' lignes';
+        statusEl.className='file-status ok';
+        card.classList.add('loaded');
+        onLoad(rows);
+      }catch(err){
+        statusEl.textContent='\u2717 '+err.message;
+        statusEl.className='file-status err';
+      }
+    };
+    reader.readAsText(file,'utf-8');
+  }
+  inp.addEventListener('change',function(e){load(e.target.files[0]);});
+  card.addEventListener('dragover',function(e){e.preventDefault();card.classList.add('drag');});
+  card.addEventListener('dragleave',function(){card.classList.remove('drag');});
+  card.addEventListener('drop',function(e){
+    e.preventDefault();card.classList.remove('drag');load(e.dataTransfer.files[0]);
+  });
+}
+
+setupDrop('drop-plan','input-plan','status-plan',function(rows){planRows=rows;buildResult();});
+setupDrop('drop-tarif','input-tarif','status-tarif',function(rows){tarifRows=rows;buildResult();});
+document.getElementById('search').addEventListener('input',function(e){srch=e.target.value;renderTable();});
+document.getElementById('f-sup').addEventListener('change',function(e){fSup=e.target.value;renderTable();});
+document.getElementById('f-statut').addEventListener('change',function(e){fStatut=e.target.value;renderTable();});
+document.getElementById('f-sort').addEventListener('change',function(e){fSort=e.target.value;renderTable();});
+
+})();
+</script>
+</body>
+</html>
